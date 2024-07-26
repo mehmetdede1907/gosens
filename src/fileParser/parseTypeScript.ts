@@ -3,52 +3,53 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ParsedFile, Import, Function, Class, Interface, Parameter, Property } from '../types';
 
-export function parseTypeScriptFile(filePath: string): ParsedFile {
-  console.log(`Attempting to parse file: ${filePath}`);
-  console.log(`Current working directory: ${process.cwd()}`);
+export function parseTypeScriptFile(filePath: string): ParsedFile & { fileContent: string } {
+    console.log(`Attempting to parse file: ${filePath}`);
+    console.log(`Current working directory: ${process.cwd()}`);
+    
+    const absolutePath = path.resolve(filePath);
+    console.log(`Absolute file path: ${absolutePath}`);
   
-  const absolutePath = path.resolve(filePath);
-  console.log(`Absolute file path: ${absolutePath}`);
-
-  if (!fs.existsSync(absolutePath)) {
-    throw new Error(`File does not exist: ${absolutePath}`);
-  }
-
-  const program = ts.createProgram([absolutePath], {});
-  const sourceFile = program.getSourceFile(absolutePath);
-
-  if (!sourceFile) {
-    throw new Error(`Could not find source file: ${absolutePath}`);
-  }
-
-  const parsedFile: ParsedFile = {
-    imports: [],
-    functions: [],
-    classes: [],
-    interfaces: [],
-  };
-
-  ts.forEachChild(sourceFile, (node) => {
-    try {
-      if (ts.isImportDeclaration(node)) {
-        parsedFile.imports.push(parseImport(node));
-      } else if (ts.isFunctionDeclaration(node)) {
-        const func = parseFunction(node);
-        if (func) parsedFile.functions.push(func);
-      } else if (ts.isClassDeclaration(node)) {
-        const cls = parseClass(node);
-        if (cls) parsedFile.classes.push(cls);
-      } else if (ts.isInterfaceDeclaration(node)) {
-        const intf = parseInterface(node);
-        if (intf) parsedFile.interfaces.push(intf);
-      }
-    } catch (error) {
-      console.error(`Error parsing node:`, error);
+    if (!fs.existsSync(absolutePath)) {
+      throw new Error(`File does not exist: ${absolutePath}`);
     }
-  });
-
-  return parsedFile;
-}
+  
+    const fileContent = fs.readFileSync(absolutePath, 'utf-8');
+    const program = ts.createProgram([absolutePath], {});
+    const sourceFile = program.getSourceFile(absolutePath);
+  
+    if (!sourceFile) {
+      throw new Error(`Could not find source file: ${absolutePath}`);
+    }
+  
+    const parsedFile: ParsedFile = {
+      imports: [],
+      functions: [],
+      classes: [],
+      interfaces: [],
+    };
+  
+    ts.forEachChild(sourceFile, (node) => {
+      try {
+        if (ts.isImportDeclaration(node)) {
+          parsedFile.imports.push(parseImport(node));
+        } else if (ts.isFunctionDeclaration(node)) {
+          const func = parseFunction(node);
+          if (func) parsedFile.functions.push(func);
+        } else if (ts.isClassDeclaration(node)) {
+          const cls = parseClass(node);
+          if (cls) parsedFile.classes.push(cls);
+        } else if (ts.isInterfaceDeclaration(node)) {
+          const intf = parseInterface(node);
+          if (intf) parsedFile.interfaces.push(intf);
+        }
+      } catch (error) {
+        console.error(`Error parsing node:`, error);
+      }
+    });
+  
+    return { ...parsedFile, fileContent };
+  }
 
 function parseImport(node: ts.ImportDeclaration): Import {
   const path = (node.moduleSpecifier as ts.StringLiteral).text;
@@ -135,3 +136,17 @@ function parseProperty(node: ts.PropertyDeclaration | ts.PropertySignature): Pro
   const type = node.type ? node.type.getText() : 'any';
   return { name, type };
 }
+
+export function readTypeScriptFile(filePath: string): string {
+    console.log(`Attempting to read file: ${filePath}`);
+    console.log(`Current working directory: ${process.cwd()}`);
+    
+    const absolutePath = path.resolve(filePath);
+    console.log(`Absolute file path: ${absolutePath}`);
+  
+    if (!fs.existsSync(absolutePath)) {
+      throw new Error(`File does not exist: ${absolutePath}`);
+    }
+  
+    return fs.readFileSync(absolutePath, 'utf-8');
+  }
