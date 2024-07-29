@@ -1,3 +1,6 @@
+
+//npx ts-node src/main.ts math.ts
+
 import { parseTypeScriptFile } from './fileParser/parseTypeScript';
 import { generateTestCases } from './testGenerator/generateTestCases';
 import { createTestFile } from './testGenerator/createTestFile';
